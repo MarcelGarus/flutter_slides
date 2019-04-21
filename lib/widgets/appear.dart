@@ -20,7 +20,7 @@ class _AppearState extends State<Appear> with AdvanceableMixin {
   }
 
   @override
-  void advance() => _appeared = true;
+  void advance() => setState(() => _appeared = true);
 
   @override
   bool get isCompleted => _appeared;
@@ -47,7 +47,7 @@ class _CounterState extends State<Counter> with AdvanceableMixin {
   }
 
   @override
-  void advance() => counter++;
+  void advance() => setState(() => counter++);
 
   @override
   bool get isCompleted => counter == 4;

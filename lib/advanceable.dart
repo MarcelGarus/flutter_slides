@@ -56,7 +56,7 @@ class _AdvanceableState extends State<Advanceable> with AdvanceableMixin {
     context.visitChildElements(visitor);
 
     // We don't care about [Advanceable]s that already completed.
-    advanceables = advanceables.where((a) => !a.advanceable.isCompleted);
+    advanceables.removeWhere((a) => a.advanceable.isCompleted);
 
     // Advanceables that have an index execute before those that don't have one,
     // so let's move them to the front.
@@ -78,6 +78,7 @@ class _AdvanceableState extends State<Advanceable> with AdvanceableMixin {
   void advance() {
     var advanceable = _getNextAdvanceableMixin();
     assert(advanceable != null);
+    print('The advanceable to continue is $advanceable.');
     advanceable.advance();
   }
 }

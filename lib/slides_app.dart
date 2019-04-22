@@ -16,7 +16,6 @@ Floop _getFloopGroup(BuildContext context) {
   }
 
   context.visitChildElements(visitor);
-  print('The found floop group is $result.');
   return result;
 }
 
@@ -110,9 +109,16 @@ class _PresenterState extends State<Presenter> {
 
   void previous() {
     var slide = _getFloopGroup(context);
-    if (slide.isAtStart)
+    if (slide.isAtStart) {
+      // We go to the previous slide. Because it should seem like the slide was
+      // already clicked through, spam it with [next] calls until it's at the
+      // end.
       setState(() => _currentIndex--);
-    else
+      Future.delayed(Duration.zero, () {
+        var slide = _getFloopGroup(context);
+        while (slide.isNotAtEnd) slide.next();
+      });
+    } else
       slide.previous();
   }
 
@@ -141,14 +147,26 @@ class _PresenterState extends State<Presenter> {
     print('Current slide is at index $_currentIndex');
     var slide = _slides[_currentIndex];
 
-    return GestureDetector(
-      onTap: next,
-      onLongPress: () {
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => _SlidesPreviewPage(presenter: this),
-        ));
+    return WillPopScope(
+      onWillPop: () async {
+        previous();
+        return false;
       },
-      child: slide.buildWidget(context),
+      child: GestureDetector(
+        onTap: next,
+        onHorizontalDragStart: (_) {},
+        onHorizontalDragUpdate: (_) {},
+        onHorizontalDragEnd: (details) {
+          if (details.primaryVelocity < -100) previous();
+        },
+        onLongPress: () {
+          Navigator.of(context).push(PageRouteBuilder(
+            pageBuilder: (_, __, ___) => _SlidesPreviewPage(presenter: this),
+            transitionsBuilder: (_, __, ___, child) => child,
+          ));
+        },
+        child: slide.buildWidget(context),
+      ),
     );
   }
 }
@@ -164,23 +182,23 @@ class _SlidesPreviewPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Color(0xFFF0F0F0),
       body: ListView(
+        padding: MediaQuery.of(context).padding + EdgeInsets.all(16),
         children: <Widget>[
-          _buildTitle(),
+          _buildTitle(context),
           _buildPreviewSlides(),
         ],
       ),
     );
   }
 
-  Widget _buildTitle() {
-    return AppBar(
-      title: Text(
+  Widget _buildTitle(BuildContext context) {
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.only(bottom: 16, top: 8),
+      child: Text(
         presenter._title,
-        style: TextStyle(color: Colors.black),
+        style: Theme.of(context).textTheme.headline,
       ),
-      centerTitle: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
     );
   }
 
@@ -204,6 +222,10 @@ class _SlidesPreviewPage extends StatelessWidget {
               index: i,
               slide: presenter._slides[i],
               isActive: i == presenter._currentIndex,
+              onPressed: () {
+                presenter._currentIndex = i;
+                Navigator.of(context).pop();
+              },
             ),
           ));
         }
@@ -221,55 +243,55 @@ class _SlidePreview extends StatefulWidget {
     @required this.index,
     @required this.slide,
     this.isActive = false,
+    this.onPressed,
   });
 
   final int index;
   final Slide slide;
   final bool isActive;
+  final VoidCallback onPressed;
 
   @override
   _SlidePreviewState createState() => _SlidePreviewState();
 }
 
 class _SlidePreviewState extends State<_SlidePreview> {
-  // In the small preview slide, the slide should display everything, just like
-  // it was already clicked through. Sadly, there's no more elegant way to
-  // achieve that than spamming [next] on the slide floop until it's at the end.
   @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context) {
+    // In the small preview slide, the slide should display everything, just
+    // like it was already clicked through. Sadly, there's no more elegant way
+    // to achieve that than spamming [next] on the slide floop until it's at the
+    // end.
     Future.delayed(Duration.zero, () {
       var floop = _getFloopGroup(context);
       while (floop.isNotAtEnd) floop.next();
     });
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: widget.isActive
-                  ? Theme.of(context).primaryColor
-                  : Colors.black12,
-              width: 2,
+        GestureDetector(
+          onTap: widget.onPressed,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: widget.isActive
+                    ? Theme.of(context).primaryColor
+                    : Colors.black12,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
             ),
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.white,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: widget.slide.buildWidget(context),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: widget.slide.buildWidget(context),
+            ),
           ),
         ),
         SizedBox(height: 8),
         Container(
-          width: 200,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             widget.slide.name.isEmpty

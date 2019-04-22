@@ -9,8 +9,8 @@ class IntroSlide extends StatelessWidget {
         child: Center(
           child: Column(
             children: [
-              Advanceable(index: 1, child: AppearText('blub')),
-              Advanceable(index: 0, child: AppearText('hey')),
+              FloopGroup(index: 1, child: AppearText('blub')),
+              FloopGroup(index: 0, child: AppearText('hey')),
               //WriteText('Advancable'),
               Appear(child: FlutterLogo()),
               Counter(),

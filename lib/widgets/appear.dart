@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../advanceable.dart';
+import '../floop.dart';
 
 class Appear extends StatefulWidget {
   Appear({@required this.child});
@@ -11,7 +11,7 @@ class Appear extends StatefulWidget {
   _AppearState createState() => _AppearState();
 }
 
-class _AppearState extends State<Appear> with AdvanceableMixin {
+class _AppearState extends State<Appear> with Floop, BinaryFloop {
   bool _appeared = false;
 
   @override
@@ -20,10 +20,7 @@ class _AppearState extends State<Appear> with AdvanceableMixin {
   }
 
   @override
-  void advance() => setState(() => _appeared = true);
-
-  @override
-  bool get isCompleted => _appeared;
+  void toggle(val) => setState(() => _appeared = val);
 }
 
 class AppearText extends StatelessWidget {
@@ -39,7 +36,7 @@ class Counter extends StatefulWidget {
   _CounterState createState() => _CounterState();
 }
 
-class _CounterState extends State<Counter> with AdvanceableMixin {
+class _CounterState extends State<Counter> with Floop {
   int counter = 0;
 
   Widget build(BuildContext context) {
@@ -47,8 +44,14 @@ class _CounterState extends State<Counter> with AdvanceableMixin {
   }
 
   @override
-  void advance() => setState(() => counter++);
+  void next() => setState(() => counter++);
 
   @override
-  bool get isCompleted => counter == 4;
+  void previous() => setState(() => counter--);
+
+  @override
+  bool get isAtStart => counter == 0;
+
+  @override
+  bool get isAtEnd => counter == 4;
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 
-import 'advanceable.dart';
+import 'floop.dart';
 import 'slide.dart';
 
 /// A [SlidesApp] is the root of every presentation.
@@ -86,13 +86,12 @@ class _PresenterState extends State<Presenter> {
 
   void advance() {
     void visitor(Element element) {
-      if (element.widget is Advanceable) {
-        AdvanceableMixin slide =
-            (element as StatefulElement).state as AdvanceableMixin;
-        if (slide.isCompleted) {
+      if (element.widget is FloopGroup) {
+        Floop slide = (element as StatefulElement).state as Floop;
+        if (slide.isAtStart) {
           setState(() => _currentIndex++);
         } else {
-          slide.advance();
+          slide.next();
         }
       } else {
         // It's just a regular old widget.
@@ -175,7 +174,7 @@ class SlidesPreviewPage extends StatelessWidget {
         for (int i = 0; i < presenter._slides.length; i++) {
           previews.add(SizedBox(
             width: previewWidth,
-            child: SlidePreview(
+            child: _SlidePreview(
               index: i,
               slide: presenter._slides[i],
               isActive: i == presenter._currentIndex,
@@ -191,8 +190,8 @@ class SlidesPreviewPage extends StatelessWidget {
 
 /// Builds a small preview for a slide. A small border is painted around the
 /// slide to indicate whether the slide is the active slide.
-class SlidePreview extends StatelessWidget {
-  SlidePreview({
+class _SlidePreview extends StatelessWidget {
+  _SlidePreview({
     @required this.index,
     @required this.slide,
     this.isActive = false,

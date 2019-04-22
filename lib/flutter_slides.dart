@@ -1,7 +1,7 @@
 library flutter_slides;
 
 // Advanceables.
-export 'advanceable.dart';
+export 'floop.dart';
 export 'widgets/appear.dart';
 
 // The app.

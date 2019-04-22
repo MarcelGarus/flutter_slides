@@ -4,6 +4,22 @@ import 'package:flutter/material.dart';
 import 'floop.dart';
 import 'slide.dart';
 
+/// Returns the next [FloopGroup] below the context. Assumes there is only one.
+Floop _getFloopGroup(BuildContext context) {
+  Floop result;
+
+  void visitor(Element element) {
+    if (element.widget is FloopGroup)
+      result = (element as StatefulElement).state as Floop;
+    else
+      element.visitChildren(visitor);
+  }
+
+  context.visitChildElements(visitor);
+  print('The found floop group is $result.');
+  return result;
+}
+
 /// A [SlidesApp] is the root of every presentation.
 class SlidesApp extends StatelessWidget {
   /// The slides to display.
@@ -84,22 +100,20 @@ class _PresenterState extends State<Presenter> {
     _updateIndex();
   }
 
-  void advance() {
-    void visitor(Element element) {
-      if (element.widget is FloopGroup) {
-        Floop slide = (element as StatefulElement).state as Floop;
-        if (slide.isAtStart) {
-          setState(() => _currentIndex++);
-        } else {
-          slide.next();
-        }
-      } else {
-        // It's just a regular old widget.
-        element.visitChildren(visitor);
-      }
-    }
+  void next() {
+    var slide = _getFloopGroup(context);
+    if (slide.isAtEnd)
+      setState(() => _currentIndex++);
+    else
+      slide.next();
+  }
 
-    context.visitChildElements(visitor);
+  void previous() {
+    var slide = _getFloopGroup(context);
+    if (slide.isAtStart)
+      setState(() => _currentIndex--);
+    else
+      slide.previous();
   }
 
   void _updateIndex() {
@@ -107,29 +121,41 @@ class _PresenterState extends State<Presenter> {
       _currentIndex = null;
     } else {
       _currentIndex ??= 0;
-      _currentIndex = _currentIndex.clamp(0, _slides.length);
+      _currentIndex = _currentIndex.clamp(0, _slides.length - 1);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_slides.isEmpty) {
+      return Container(
+        color: Colors.black,
+        alignment: Alignment.center,
+        child: Text(
+          'Add slides, please!',
+          style: TextStyle(color: Colors.white),
+        ),
+      );
+    }
+
     print('Current slide is at index $_currentIndex');
-    var slide = _slides[_currentIndex ?? 0];
+    var slide = _slides[_currentIndex];
 
     return GestureDetector(
+      onTap: next,
       onLongPress: () {
         Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => SlidesPreviewPage(presenter: this),
+          builder: (_) => _SlidesPreviewPage(presenter: this),
         ));
       },
-      child: _buildSlideContent(context, slide),
+      child: slide.buildWidget(context),
     );
   }
 }
 
 /// A page that allows for quickly selecting a slide from many previews.
-class SlidesPreviewPage extends StatelessWidget {
-  SlidesPreviewPage({@required this.presenter});
+class _SlidesPreviewPage extends StatelessWidget {
+  _SlidesPreviewPage({@required this.presenter});
 
   final _PresenterState presenter;
 
@@ -190,7 +216,7 @@ class SlidesPreviewPage extends StatelessWidget {
 
 /// Builds a small preview for a slide. A small border is painted around the
 /// slide to indicate whether the slide is the active slide.
-class _SlidePreview extends StatelessWidget {
+class _SlidePreview extends StatefulWidget {
   _SlidePreview({
     @required this.index,
     @required this.slide,
@@ -202,6 +228,23 @@ class _SlidePreview extends StatelessWidget {
   final bool isActive;
 
   @override
+  _SlidePreviewState createState() => _SlidePreviewState();
+}
+
+class _SlidePreviewState extends State<_SlidePreview> {
+  // In the small preview slide, the slide should display everything, just like
+  // it was already clicked through. Sadly, there's no more elegant way to
+  // achieve that than spamming [next] on the slide floop until it's at the end.
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration.zero, () {
+      var floop = _getFloopGroup(context);
+      while (floop.isNotAtEnd) floop.next();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -211,7 +254,9 @@ class _SlidePreview extends StatelessWidget {
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isActive ? Theme.of(context).primaryColor : Colors.black12,
+              color: widget.isActive
+                  ? Theme.of(context).primaryColor
+                  : Colors.black12,
               width: 2,
             ),
             borderRadius: BorderRadius.circular(8),
@@ -219,7 +264,7 @@ class _SlidePreview extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: _buildSlideContent(context, slide),
+            child: widget.slide.buildWidget(context),
           ),
         ),
         SizedBox(height: 8),
@@ -227,48 +272,12 @@ class _SlidePreview extends StatelessWidget {
           width: 200,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
-            slide.name.isEmpty ? '${index + 1}' : '${index + 1}: ${slide.name}',
+            widget.slide.name.isEmpty
+                ? '${widget.index + 1}'
+                : '${widget.index + 1}: ${widget.slide.name}',
           ),
         ),
       ],
     );
   }
-}
-
-/// Builds the slide content, ready to be displayed in large on the screen as
-/// well as in a small preview. The resulting widget expects tight constraints.
-Widget _buildSlideContent(BuildContext context, Slide slide) {
-  assert(context != null);
-  assert(slide != null);
-
-  // Choose a width and height for the slide. The slide has an inherent [size],
-  // but its width and height may be null. If both width and height are set,
-  // choose them. If both are null, just pick the screen size. If only one of
-  // them is set, try to choose the other so as to retain the screen aspect
-  // ratio.
-  var screen = MediaQuery.of(context).size;
-  var size = slide.size;
-  assert(screen != null);
-  assert(size != null);
-
-  if (size == Size(null, null)) size = screen;
-  var aspectRatio = screen.aspectRatio;
-  var width = size.width ?? size.height * aspectRatio;
-  var height = size.height ?? size.width / aspectRatio;
-
-  assert(width != null);
-  assert(height != null);
-
-  return Hero(
-    tag: slide,
-    child: Material(
-      child: FittedBox(
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: RepaintBoundary(child: slide.builder()),
-        ),
-      ),
-    ),
-  );
 }

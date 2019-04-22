@@ -11,8 +11,13 @@ mixin Floop {
   void previous();
   bool get isAtStart;
   bool get isAtEnd;
+  bool get isNotAtStart => !isAtStart;
+  bool get isNotAtEnd => !isAtEnd;
 }
 
+/// A [BinaryFloop] is a [Floop] with just two states. By mixing in
+/// [BinaryFloop], classes don't need to implement [next], [previous],
+/// [isAtStart] and [isAtEnd], but only [toggle], making the code more concise.
 mixin BinaryFloop on Floop {
   bool _didExecute = false;
 
@@ -119,17 +124,19 @@ class _FloopGroupState extends State<FloopGroup> with Floop {
 
   @override
   void next() {
-    var floop =
-        _getFloops().firstWhere((floop) => !floop.isAtEnd, orElse: () => null);
+    var floop = _getFloops()
+        .firstWhere((floop) => floop.isNotAtEnd, orElse: () => null);
     assert(floop != null);
     floop.next();
+    _getFloops();
   }
 
   @override
   void previous() {
-    var floop =
-        _getFloops().lastWhere((floop) => !floop.isAtStart, orElse: () => null);
+    var floop = _getFloops()
+        .lastWhere((floop) => floop.isNotAtStart, orElse: () => null);
     assert(floop != null);
     floop.previous();
+    _getFloops();
   }
 }

@@ -1,7 +1,12 @@
 library flutter_slides;
 
-// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+// Advanceables.
+export 'advanceable.dart';
+export 'widgets/appear.dart';
+
+// The app.
+export 'slide.dart';
+export 'slides_app.dart';
+
+// Layouts.
+export 'slide_layout.dart';

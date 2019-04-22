@@ -1,79 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slides/flutter_slides.dart';
+import 'slides/intro.dart';
 
-import 'package:flutter_slides/advanceable.dart';
-import 'package:flutter_slides/widgets/appear.dart';
+void main() => runApp(TestPresentation());
 
-void main() => runApp(Presentation());
-
-class Presentation extends StatefulWidget {
+class TestPresentation extends StatelessWidget {
   @override
-  _PresentationState createState() => _PresentationState();
-}
-
-class _PresentationState extends State<Presentation> {
-  void _advance() {
-    void visitor(Element element) {
-      if (element.widget is Advanceable) {
-        ((element as StatefulElement).state as AdvanceableMixin).advance();
-      } else {
-        element.visitChildren(visitor);
-      }
-    }
-
-    context.visitChildElements(visitor);
-  }
-
   Widget build(BuildContext context) {
-    /*return SlidesApp(
-      title: 'Test',
+    return SlidesApp(
+      title: 'Test Presentation',
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
         fontFamily: 'Signature',
       ),
-      initialSlide: 'intro',
-      slides: {
-        'intro': () => IntroSlide(),
-      },
-    );*/
-
-    return MaterialApp(
-      title: 'Theme',
-      theme: ThemeData(primarySwatch: Colors.deepPurple),
-      home: Scaffold(
-        backgroundColor: Colors.yellow[200],
-        appBar: AppBar(title: Text('Title')),
-        body: Column(
-          children: <Widget>[
-            Expanded(child: IntroSlide()),
-            Container(
-              color: Colors.green,
-              child: InkWell(
-                onTap: _advance,
-                splashColor: Colors.white,
-                child: SizedBox(height: 100, width: double.infinity),
-              ),
-            ),
-          ],
+      slides: [
+        Slide(
+          name: 'intro slide with a really really really looooong title',
+          builder: () => IntroSlide(),
         ),
-      ),
-    );
-  }
-}
-
-class IntroSlide extends StatelessWidget {
-  Widget build(_) {
-    return Advanceable(
-      child: Center(
-        child: Column(
-          children: [
-            AppearText('blub'),
-            AppearText('hey'),
-            //WriteText('Advancable'),
-            Appear(child: FlutterLogo()),
-            Counter(),
-          ],
-        ),
-      ),
+        Slide(name: 'intro2', builder: () => IntroSlide()),
+        Slide(name: 'intro3', builder: () => IntroSlide()),
+        Slide(name: 'intro4', builder: () => IntroSlide()),
+        Slide(name: 'intro5', builder: () => IntroSlide()),
+        Slide(name: 'intro6', builder: () => IntroSlide()),
+        Slide(name: 'intro7', builder: () => IntroSlide()),
+      ],
     );
   }
 }

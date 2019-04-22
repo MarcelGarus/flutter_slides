@@ -26,6 +26,8 @@ class Advanceable extends StatefulWidget {
 }
 
 class _AdvanceableState extends State<Advanceable> with AdvanceableMixin {
+  bool _isCompleted = false;
+
   @override
   Widget build(BuildContext context) => widget.child;
 

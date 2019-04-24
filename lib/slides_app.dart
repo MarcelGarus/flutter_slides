@@ -51,6 +51,7 @@ class SlidesApp extends StatelessWidget {
       title: title,
       color: color,
       theme: theme,
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         backgroundColor: Colors.yellow[200],
         body: Presenter(title: title, slides: slides),
@@ -179,14 +180,20 @@ class _SlidesPreviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var content = <Widget>[];
+    content.add(_buildTitle(context));
+    assert(() {
+      content.add(_buildDebugWarning());
+      content.add(SizedBox(height: 16));
+      return true;
+    }());
+    content.add(_buildPreviewSlides());
+
     return Scaffold(
       backgroundColor: Color(0xFFF0F0F0),
       body: ListView(
         padding: MediaQuery.of(context).padding + EdgeInsets.all(16),
-        children: <Widget>[
-          _buildTitle(context),
-          _buildPreviewSlides(),
-        ],
+        children: content,
       ),
     );
   }
@@ -197,15 +204,30 @@ class _SlidesPreviewPage extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16, top: 8),
       child: Text(
         presenter._title,
-        style: Theme.of(context).textTheme.headline,
+        style: Theme.of(context)
+            .textTheme
+            .headline
+            .copyWith(fontWeight: FontWeight.bold, fontSize: 32),
       ),
     );
   }
 
-  Widget _buildPreviewSlides() {
+  Widget _buildDebugWarning() {
     return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        border: Border.all(color: Colors.black12, width: 2),
+      ),
       padding: const EdgeInsets.all(16),
-      alignment: Alignment.center,
+      child: Text("You're currently running in debug mode. To get the best "
+          "performance, remember to build the presentation in release mode once "
+          "you're done."),
+    );
+  }
+
+  Widget _buildPreviewSlides() {
+    return Center(
       child: LayoutBuilder(builder: (context, constraints) {
         // The default size of the preview slides is 200. So let's see how many
         // of them fit next to each other with a padding of 8 between them.
